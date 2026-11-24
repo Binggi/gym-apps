@@ -1,4 +1,4 @@
-import { APP_VERSION, LAST_BACKUP_KEY, installPrompt, lastBackup } from '../actions.js';
+import { APP_VERSION, LAST_BACKUP_KEY, installPrompt, lastBackup, refresh } from '../actions.js';
 import { exportData, importData, state, storageInfo } from '../db.js';
 import { todayISO } from '../logic.js';
 import { dateShort, esc, icon, num, toast } from '../ui.js';
@@ -8,10 +8,7 @@ export function render(root) {
   const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
 
   root.innerHTML = `
-    <div class="page-head">
-      <h1>Cadangan & aplikasi</h1>
-      <p class="lead">Semua catatan tersimpan di HP ini saja. Simpan file cadangan secara rutin, misalnya tiap 2 minggu.</p>
-    </div>
+    <div class="note neutral">${icon('info')}<div>Data hanya ada di HP ini. Simpan cadangan tiap 2 minggu.</div></div>
     <div class="grid-2">
       <section class="card">
         <h2>Data di HP ini</h2>
@@ -21,35 +18,35 @@ export function render(root) {
           <div class="stat"><span class="label">Catatan badan</span><span class="value">${state.body.length}</span></div>
           <div class="stat"><span class="label">Cadangan terakhir</span><span class="value small-value">${lb ? esc(dateShort(lb.slice(0, 10))) : 'Belum'}</span></div>
         </div>
-        <p class="muted small" data-storage>Memeriksa penyimpanan…</p>
+        <p class="muted small" data-storage></p>
       </section>
       <section class="card">
         <h2>Simpan cadangan</h2>
-        <p>Membuat file <code>.json</code> berisi semua catatan. Simpan ke Google Drive atau kirim ke diri sendiri lewat WhatsApp.</p>
+        <p class="muted small">Simpan filenya ke Google Drive atau WhatsApp.</p>
         <button class="btn primary block" type="button" data-export>${icon('save')}Simpan file cadangan</button>
       </section>
       <section class="card">
-        <h2>Pulihkan dari cadangan</h2>
-        <p>Pakai ini setelah ganti HP atau install ulang. <b>Semua catatan di HP ini akan diganti</b> dengan isi file.</p>
+        <h2>Pulihkan</h2>
+        <p class="muted small">Untuk ganti HP. Data di HP ini akan diganti.</p>
         <label class="btn block" for="import-file">${icon('upload')}Pilih file cadangan</label>
         <input id="import-file" type="file" accept="application/json,.json" hidden>
         <p class="form-error" role="alert" hidden></p>
       </section>
       <section class="card">
         <h2>Pasang di layar utama</h2>
-        ${standalone ? '<p>Aplikasi sudah terpasang dan berjalan dari layar utama.</p>' : `
-          <p>Di Chrome Android: ketuk menu <b>⋮</b>, lalu <b>Instal aplikasi</b> atau <b>Tambahkan ke layar utama</b>.</p>
+        ${standalone ? '<p class="muted small">Sudah terpasang.</p>' : `
+          <p class="muted small">Chrome: menu <b>⋮</b> → <b>Instal aplikasi</b>.</p>
           <button class="btn block" type="button" data-install ${installPrompt() ? '' : 'hidden'}>Pasang sekarang</button>`}
-        <p class="muted small">Versi ${APP_VERSION}. Setelah terpasang, aplikasi tetap jalan tanpa internet. Pembaruan diunduh otomatis saat HP online.</p>
+        <p class="muted tiny">Versi ${APP_VERSION}</p>
       </section>
     </div>`;
 
   storageInfo().then(({ usage, persisted }) => {
     const el = root.querySelector('[data-storage]');
     if (!el) return;
-    el.textContent = `${usage !== null ? `Terpakai ±${num(usage / 1024 / 1024, 1)} MB. ` : ''}${persisted
-      ? 'Penyimpanan permanen aktif: browser tidak akan menghapus data otomatis.'
-      : 'Penyimpanan belum permanen. Pasang aplikasi di layar utama supaya data lebih aman, dan tetap simpan cadangan.'}`;
+    el.textContent = `${usage !== null ? `±${num(usage / 1024 / 1024, 1)} MB · ` : ''}${persisted
+      ? 'penyimpanan permanen aktif'
+      : 'pasang di layar utama supaya data lebih aman'}`;
   });
 
   root.querySelector('[data-export]').addEventListener('click', () => {
@@ -63,7 +60,7 @@ export function render(root) {
     setTimeout(() => URL.revokeObjectURL(a.href), 5000);
     try { localStorage.setItem(LAST_BACKUP_KEY, new Date().toISOString().slice(0, 10)); } catch { /* abaikan */ }
     toast('File cadangan dibuat. Cek folder Download.');
-    render(root);
+    refresh();
   });
 
   root.querySelector('#import-file').addEventListener('change', async (e) => {
@@ -77,7 +74,7 @@ export function render(root) {
       if (!confirm(`Ganti semua catatan di HP ini dengan isi file (${counts})?`)) { e.target.value = ''; return; }
       await importData(data);
       toast('Cadangan dipulihkan.');
-      render(root);
+      refresh();
     } catch (ex) {
       err.textContent = ex instanceof SyntaxError ? 'File tidak bisa dibaca. Pilih file .json dari tombol "Simpan file cadangan".' : ex.message;
       err.hidden = false;
@@ -90,6 +87,6 @@ export function render(root) {
     if (!p) return;
     p.prompt();
     await p.userChoice;
-    render(root);
+    refresh();
   });
 }

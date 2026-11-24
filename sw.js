@@ -1,6 +1,6 @@
 // Service worker: simpan semua file aplikasi supaya jalan tanpa internet.
 // Setiap kali file aplikasi berubah, naikkan CACHE (dan APP_VERSION di js/actions.js).
-const CACHE = 'catatan-gym-v1.0.0';
+const CACHE = 'catatan-gym-v1.1.0';
 const FONT_CACHE = 'catatan-gym-fonts';
 
 const EXERCISES = ['chestpress', 'incline', 'shoulder', 'lateral', 'pushdown', 'pulldown', 'cablerow', 'row',
@@ -11,7 +11,7 @@ const SHELL = [
   'index.html',
   'manifest.webmanifest',
   'css/app.css',
-  'js/app.js', 'js/actions.js', 'js/charts.js', 'js/data.js', 'js/db.js', 'js/logic.js', 'js/ui.js',
+  'js/app.js', 'js/actions.js', 'js/charts.js', 'js/data.js', 'js/db.js', 'js/logic.js', 'js/past.js', 'js/ui.js',
   'js/pages/backup.js', 'js/pages/body.js', 'js/pages/daily.js', 'js/pages/dashboard.js',
   'js/pages/exercise.js', 'js/pages/session.js', 'js/pages/workouts.js',
   'img/icon.svg', 'img/icon-180.png', 'img/icon-192.png', 'img/icon-512.png', 'img/icon-maskable-512.png',

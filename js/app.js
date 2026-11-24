@@ -12,15 +12,23 @@ import * as exercise from './pages/exercise.js';
 import * as session from './pages/session.js';
 import * as workouts from './pages/workouts.js';
 
+// [pola, halaman, tab aktif, judul bilah atas, halaman induk untuk tombol kembali]
 const ROUTES = [
-  [/^\/?$/, dashboard, 'beranda'],
-  [/^\/latihan$/, workouts, 'latihan'],
-  [/^\/latihan\/(\d+)$/, session, 'latihan'],
-  [/^\/gerakan\/([a-z]+)$/, exercise, 'latihan'],
-  [/^\/harian(?:\/(\d{4}-\d{2}-\d{2}))?$/, daily, 'harian'],
-  [/^\/badan$/, body, 'badan'],
-  [/^\/cadangan$/, backup, 'cadangan'],
+  [/^\/?$/, dashboard, 'beranda', 'Catatan Gym', null],
+  [/^\/latihan$/, workouts, 'latihan', 'Latihan', null],
+  [/^\/latihan\/(\d+)$/, session, 'latihan', 'Sesi latihan', '/latihan'],
+  [/^\/gerakan\/([a-z]+)$/, exercise, 'latihan', 'Gerakan', '/latihan'],
+  [/^\/harian(?:\/(\d{4}-\d{2}-\d{2}))?$/, daily, 'harian', 'Harian', null],
+  [/^\/badan$/, body, 'badan', 'Badan', null],
+  [/^\/cadangan$/, backup, 'cadangan', 'Cadangan', '/'],
 ];
+const titleEl = document.getElementById('appbar-title');
+const backBtn = document.getElementById('back');
+let backTo = null;
+let navCount = 0; // berapa kali pindah halaman di dalam aplikasi (untuk tombol kembali)
+backBtn.addEventListener('click', () => {
+  if (navCount > 1) history.back(); else location.hash = '#' + backTo;
+});
 
 const main = document.getElementById('app');
 let cleanup = null;
@@ -29,16 +37,21 @@ let lastPath = null;
 function route() {
   const raw = location.hash.replace(/^#/, '') || '/';
   const [path, query = ''] = raw.split('?');
-  const match = ROUTES.map(([re, page, tab]) => [path.match(re), page, tab]).find(([m]) => m);
+  const match = ROUTES.map(([re, ...rest]) => [path.match(re), ...rest]).find(([m]) => m);
 
   try { cleanup?.(); } catch { /* abaikan */ }
   cleanup = null;
 
   if (!match) { location.replace('#/'); return; }
-  const [m, page, tab] = match;
-  document.querySelectorAll('.tabbar a').forEach((a) => {
+  const [m, page, tab, title, parent] = match;
+  document.querySelectorAll('[data-tab]').forEach((a) => {
     if (a.dataset.tab === tab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
   });
+  titleEl.textContent = title;
+  document.title = title === 'Catatan Gym' ? title : `${title} · Catatan Gym`;
+  backTo = parent;
+  backBtn.hidden = !parent;
+  if (path !== lastPath) navCount++;
 
   try {
     cleanup = page.render(main, new URLSearchParams(query), ...m.slice(1)) ?? null;

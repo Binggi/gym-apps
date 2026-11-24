@@ -29,6 +29,42 @@ export function nextRoutine(workouts) {
 
 export const isGymDay = (iso) => ROUTINES.some((r) => r.dow === dow(iso));
 
+/** Hari gym terakhir sebelum `iso` (tidak termasuk hari itu sendiri). */
+export function lastGymDayBefore(iso) {
+  for (let i = 1; i <= 7; i++) {
+    const d = addDays(iso, -i);
+    if (isGymDay(d)) return d;
+  }
+  return null;
+}
+
+/** Sesi yang dijadwalkan pada tanggal itu (Senin Dorong, Rabu Tarik, Jumat Kaki), atau null. */
+export const routineForDate = (iso) => ROUTINES.find((r) => r.dow === dow(iso)) ?? null;
+
+/**
+ * Sesi yang sudah dikerjakan tapi dicatat tanpa detail beban (misalnya sebelum pakai aplikasi).
+ * Tetap dihitung untuk urutan sesi dan minggu program; detail bisa diisi belakangan.
+ */
+export function quickWorkout(routineSlug, date, id = Date.now()) {
+  return { id, routine: routineBySlug(routineSlug).slug, date, finishedAt: `${date}T12:00:00.000Z`, quick: true,
+    cardioMinutes: null, cardioSpeed: null, cardioIncline: null, notes: '', sets: [] };
+}
+
+/** Isi set kosong untuk sesi cepat supaya beban bisa dilengkapi. */
+export function fillQuickWorkout(workouts, w) {
+  const filled = newWorkout(workouts.filter((x) => x.id !== w.id), w.routine, w.date, w.id);
+  return { ...w, quick: false, sets: filled.sets, cardioSpeed: w.cardioSpeed ?? filled.cardioSpeed };
+}
+
+/** Hari gym berikutnya setelah `iso` (tidak termasuk hari itu sendiri). */
+export function nextGymDay(iso) {
+  for (let i = 1; i <= 7; i++) {
+    const d = addDays(iso, i);
+    if (isGymDay(d)) return d;
+  }
+  return null;
+}
+
 export function programWeek(workouts, on = todayISO()) {
   if (!workouts.length) return 1;
   const first = workouts.reduce((m, w) => (w.date < m ? w.date : m), workouts[0].date);
@@ -65,8 +101,8 @@ export function suggestion(workouts, slug, current = null) {
     return {
       type: 'first',
       text: e.weight
-        ? 'Pertama kali: pilih beban yang masih terasa sanggup 3 kali lagi saat set selesai.'
-        : 'Pertama kali: fokus ke gerakan yang rapi.',
+        ? 'Pertama kali: pilih beban yang masih sanggup 3 kali lagi.'
+        : 'Pertama kali: fokus gerakan rapi.',
       last: null,
       weight: null,
     };
@@ -80,18 +116,18 @@ export function suggestion(workouts, slug, current = null) {
 
   if (hitTop) {
     const text = e.timed
-      ? `Semua set sudah ${e.repMax} detik. Tambah 5–10 detik per set.`
+      ? 'Tambah 5–10 detik per set.'
       : !e.weight
-        ? `Semua set sudah ${e.repMax} kali. Tambah 1–2 repetisi atau pelankan gerakan.`
-        : `Semua set sudah ${e.repMax} kali dengan rapi. Naikkan ke beban terkecil berikutnya.`;
+        ? 'Tambah 1–2 repetisi.'
+        : 'Naikkan sedikit bebannya.';
     return { type: 'up', text, last, weight };
   }
 
   return {
     type: 'hold',
     text: e.weight
-      ? `Pertahankan ${fmtKg(weight)}, kejar ${e.repMax} kali di semua set.`
-      : `Kejar ${e.repMax}${e.timed ? ' detik' : ' kali'} di semua set.`,
+      ? `Tetap ${fmtKg(weight)}, kejar ${e.repMax} kali.`
+      : `Kejar ${e.repMax}${e.timed ? ' detik' : ' kali'}.`,
     last,
     weight,
   };
@@ -151,7 +187,7 @@ export function weightTrend(entries) {
 
   if (win.length < 3 || span < 6) {
     return res('insufficient', 'neutral', 'Belum cukup data',
-      'Timbang 2–3 kali seminggu saat pagi. Tren muncul setelah sekitar 1 minggu data.', null, span, avg7);
+      'Timbang 2–3× seminggu. Tren muncul setelah ±1 minggu.', null, span, avg7);
   }
 
   const xs = win.map((m) => diffDays(win[0].date, m.date));
@@ -165,17 +201,17 @@ export function weightTrend(entries) {
   const t = TARGETS;
 
   if (loss > t.lossRateDoctor && span >= 13) return res('doctor', 'critical', 'Turun terlalu cepat',
-    'Sudah lebih dari 1 kg per minggu selama 2 minggu. Pastikan menu harian habis. Kalau makan sudah sesuai, periksa ke dokter (cek gula darah dan tiroid).', rate, span, avg7);
+    'Lebih dari 1 kg/minggu selama 2 minggu. Kalau makan sudah cukup, periksa ke dokter.', rate, span, avg7);
   if (loss > t.lossRateTooFast) return res('too_fast', 'warning', 'Turun terlalu cepat',
-    'Lebih dari 0,75 kg per minggu. Tambah 150–200 kkal per hari dan jangan tambah cardio.', rate, span, avg7);
+    'Tambah 150–200 kkal/hari. Jangan tambah cardio.', rate, span, avg7);
   if (loss > t.lossRateMax) return res('bit_fast', 'warning', 'Sedikit di atas target',
-    'Targetnya 0,25–0,5 kg per minggu. Pastikan camilan tidak terlewat.', rate, span, avg7);
+    'Target 0,25–0,5 kg/minggu. Jangan lewatkan camilan.', rate, span, avg7);
   if (loss >= t.lossRateMin) return res('on_target', 'good', 'Sesuai target',
-    'Turun 0,25–0,5 kg per minggu. Pertahankan.', rate, span, avg7);
+    'Pertahankan.', rate, span, avg7);
   if (span >= 14 && loss < 0.1) return res('stalled', 'warning', 'Belum turun',
-    'Tidak turun selama 2–3 minggu. Kurangi 150–200 kkal per hari.', rate, span, avg7);
+    'Kurangi 150–200 kkal/hari.', rate, span, avg7);
   return res('slow', 'neutral', 'Turun pelan',
-    'Di bawah 0,25 kg per minggu. Tunggu 2–3 minggu sebelum mengubah porsi.', rate, span, avg7);
+    'Tunggu 2–3 minggu sebelum ubah porsi.', rate, span, avg7);
 }
 
 /* ---------- Cadangan ---------- */

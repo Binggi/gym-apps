@@ -1,13 +1,13 @@
 import { go } from '../actions.js';
 import { CARDIO, REST_SECONDS } from '../data.js';
 import { put, remove, state } from '../db.js';
-import { cardioTarget, groupSets, programWeek, routineBySlug, suggestion } from '../logic.js';
+import { cardioTarget, fillQuickWorkout, groupSets, programWeek, routineBySlug, suggestion } from '../logic.js';
 import { dateDayMonth, esc, icon, num, photos, toast, val } from '../ui.js';
 
 export function render(root, params, id) {
   const w = state.workouts.find((x) => x.id === Number(id));
   if (!w) {
-    root.innerHTML = '<div class="page-head"><h1>Sesi tidak ditemukan</h1><p class="lead"><a href="#/latihan">← Kembali ke Latihan</a></p></div>';
+    root.innerHTML = '<div class="page-head"><h1>Sesi tidak ditemukan</h1></div><a class="btn" href="#/latihan">Kembali ke Latihan</a>';
     return;
   }
   const r = routineBySlug(w.routine);
@@ -31,10 +31,10 @@ export function render(root, params, id) {
     return `<article class="card ex" id="ex-${g.slug}">
       <div class="ex-head">
         <span class="n">${gi + 1}</span>
-        <div><h3>${esc(e.name)}</h3><p class="sign"><b>${esc(e.machine)}</b> · ${esc(e.muscle)} · target ${e.repMin === e.repMax ? e.repMin : `${e.repMin}–${e.repMax}`}${e.timed ? ' detik' : ''}${e.perSide ? ' per sisi' : ''}</p></div>
+        <div><h3>${esc(e.name)}</h3><p class="sign"><b>${esc(e.machine)}</b> · ${e.repMin === e.repMax ? e.repMin : `${e.repMin}–${e.repMax}`}${e.timed ? ' detik' : ' kali'}${e.perSide ? '/sisi' : ''}</p></div>
         <span class="done-badge" ${allDone ? '' : 'hidden'} title="Semua set selesai">${icon('check')}</span>
       </div>
-      ${photos(e, gi === 0)}
+      ${photos(e)}
       <div class="hint-box ${s.type === 'up' ? 'up' : ''}">
         <span>${s.type === 'up' ? '<b>Naik!</b> ' : ''}${esc(s.text)}</span>
         ${s.last ? `<span class="last">Sesi lalu: ${esc(s.last)}</span>` : ''}
@@ -54,18 +54,21 @@ export function render(root, params, id) {
         <summary>Cara melakukan</summary>
         <ol>${e.steps.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>
         <p><b>Hindari:</b> ${esc(e.avoid)}</p>
-        <p><a href="https://www.youtube.com/results?search_query=${encodeURIComponent(`cara ${e.q} pemula`)}" target="_blank" rel="noopener">Cari video di YouTube</a> · <a href="#/gerakan/${g.slug}">Progres</a></p>
+        <div class="chips" style="margin-top:10px">
+          <a class="chip" href="https://www.youtube.com/results?search_query=${encodeURIComponent(`cara ${e.q} pemula`)}" target="_blank" rel="noopener">${icon('play')}Video</a>
+          <a class="chip" href="#/gerakan/${g.slug}">${icon('chart')}Progres</a>
+        </div>
       </details>
     </article>`;
   }).join('');
 
   root.innerHTML = `
     <div class="page-head">
-      <a class="muted small" href="#/latihan">← Latihan</a>
       <h1>${esc(r.name)} · ${esc(dateDayMonth(w.date))}</h1>
       <p class="lead">${esc(r.focus)} · minggu ke-${programWeek(state.workouts, w.date)}</p>
     </div>
-    ${finished ? `<div class="note good">${icon('check')}<div><b>Sesi selesai</b> Kamu masih bisa mengubah angka di bawah; perubahan tersimpan otomatis.</div></div>` : ''}
+    ${w.quick ? `<div class="note neutral">${icon('info')}<div><b>Tanpa detail beban</b><p style="margin-top:8px"><button class="btn small dark" type="button" data-fill>Isi beban</button></p></div></div>`
+      : finished ? `<div class="note good">${icon('check')}<div><b>Sesi selesai</b></div></div>` : ''}
     <details class="card howto">
       <summary>Pemanasan 8–10 menit</summary>
       <ol>
@@ -80,20 +83,20 @@ export function render(root, params, id) {
         <div class="ex-head">
           <span class="n">${groups.length + 1}</span>
           <div><h3>Jalan di Treadmill</h3>
-            <p class="sign">Target ${cardio.min}–${cardio.max} menit · ±${num(CARDIO.speed, 1)} km/jam · tanjakan ${CARDIO.incline} · masih bisa bicara</p></div>
+            <p class="sign">${cardio.min}–${cardio.max} menit · ${num(CARDIO.speed, 1)} km/jam · tanjakan ${CARDIO.incline}</p></div>
         </div>
         <div class="form-grid">
           <div class="field full"><label for="cardioMinutes">Menit</label>
             <input id="cardioMinutes" name="cardioMinutes" type="number" inputmode="numeric" min="0" max="300" value="${val(w.cardioMinutes)}" placeholder="${cardio.min}"></div>
-          <div class="field"><label for="cardioSpeed">Kecepatan (km/jam)</label>
-            <input id="cardioSpeed" name="cardioSpeed" type="number" inputmode="decimal" step="0.1" min="0" max="25" value="${val(w.cardioSpeed)}"></div>
+          <div class="field"><label for="cardioSpeed">Kecepatan</label>
+            <div class="suffix"><input id="cardioSpeed" name="cardioSpeed" type="number" inputmode="decimal" step="0.1" min="0" max="25" value="${val(w.cardioSpeed)}"><span>km/j</span></div></div>
           <div class="field"><label for="cardioIncline">Tanjakan</label>
             <input id="cardioIncline" name="cardioIncline" type="number" inputmode="decimal" step="0.5" min="0" max="15" value="${val(w.cardioIncline)}" placeholder="3–6"></div>
-          <div class="field full"><label for="notes">Catatan <span class="hint">pegal, alat penuh, rasa badan…</span></label>
+          <div class="field full"><label for="notes">Catatan</label>
             <textarea id="notes" name="notes">${esc(w.notes)}</textarea></div>
         </div>
         <span class="save-state" aria-live="polite"></span>
-        <p class="muted small">Pendinginan: jalan santai 2–3 menit, lalu peregangan dada, punggung, paha depan, paha belakang · 30 detik.</p>
+        <p class="muted small">Pendinginan: jalan santai 3 menit, lalu peregangan.</p>
         ${finished ? '' : `<button class="btn primary block" type="submit">${icon('check')}Selesaikan sesi</button>`}
       </form>
     </div>
@@ -103,11 +106,14 @@ export function render(root, params, id) {
     </div>`;
 
   /* ---- Simpan ---- */
-  let saveTimer;
+  // `pending`: ada ketikan yang belum tersimpan (debounce). `gone`: sesi sudah dihapus, jangan disimpan lagi.
+  let saveTimer, pending = false, gone = false;
   const save = (stateEl) => {
     clearTimeout(saveTimer);
+    pending = true;
     if (stateEl) stateEl.textContent = '…';
     saveTimer = setTimeout(async () => {
+      pending = false;
       try { await put('workouts', w); if (stateEl) stateEl.textContent = 'Tersimpan'; }
       catch { if (stateEl) stateEl.textContent = 'Gagal menyimpan'; toast('Gagal menyimpan. Memori HP mungkin penuh.', 'critical'); }
     }, 400);
@@ -179,6 +185,11 @@ export function render(root, params, id) {
     toast(`Sesi ${r.name} selesai: ${done} dari ${w.sets.length} set. Mantap!`);
     go('/');
   });
+  root.querySelector('[data-fill]')?.addEventListener('click', async () => {
+    Object.assign(w, fillQuickWorkout(state.workouts, w)); // ubah objek yang sama, bukan salinan
+    await put('workouts', w);
+    rerender();
+  });
   root.querySelector('[data-reopen]')?.addEventListener('click', async () => {
     w.finishedAt = null;
     await put('workouts', w);
@@ -186,6 +197,8 @@ export function render(root, params, id) {
   });
   root.querySelector('[data-delete]').addEventListener('click', async () => {
     if (!confirm('Hapus sesi ini beserta semua setnya?')) return;
+    gone = true;
+    clearTimeout(saveTimer);
     await remove('workouts', w.id);
     toast('Sesi dihapus.');
     go('/latihan');
@@ -199,7 +212,7 @@ export function render(root, params, id) {
   document.addEventListener('visibilitychange', onVis);
   return () => {
     clearTimeout(saveTimer);
-    put('workouts', w).catch(() => {});
+    if (pending && !gone) put('workouts', w).catch(() => {}); // simpan ketikan terakhir yang belum tersimpan
     document.removeEventListener('visibilitychange', onVis);
     lock?.release?.().catch(() => {});
   };

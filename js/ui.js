@@ -50,8 +50,8 @@ export function toast(msg, tone = 'good') {
 
 export function trendNote(t) {
   const ic = { good: 'check', warning: 'alert', critical: 'alert', neutral: 'info' }[t.tone];
-  const rate = t.rate === null ? '' : ` · ${t.rate <= 0 ? 'turun' : 'naik'} ${num(Math.abs(t.rate), 2)} kg/minggu`;
-  return `<div class="note ${t.tone}" role="status">${icon(ic)}<div><b>${esc(t.title)}${rate}</b> <span>${esc(t.text)}</span></div></div>`;
+  const rate = t.rate === null ? '' : `${t.rate <= 0 ? '−' : '+'}${num(Math.abs(t.rate), 2)} kg/minggu. `;
+  return `<div class="note ${t.tone}" role="status">${icon(ic)}<div><b>${esc(t.title)}</b> <span>${rate}${esc(t.text)}</span></div></div>`;
 }
 
 /** Spesifikasi grafik ditaruh di data-chart; charts.js yang menggambar. */
@@ -65,5 +65,5 @@ export function photos(e, caption = false) {
       <img class="end" src="img/exercises/${e.slug}-1.jpg" alt="" loading="lazy" decoding="async" width="850" height="567">
       <span class="phase" aria-hidden="true"><span class="p1">Awal</span><span class="p2">Akhir</span></span>
       <span class="state">Ketuk untuk jeda</span>
-    </button>${caption ? '<p class="cap">Bentuk alat bisa sedikit beda di tiap gym. Tunjukkan foto ini ke trainer kalau bingung.</p>' : ''}`;
+    </button>${caption ? '<p class="cap">Bentuk alat bisa sedikit beda di tiap gym.</p>' : ''}`;
 }

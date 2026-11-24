@@ -4,6 +4,9 @@ import { newWorkout } from './logic.js';
 
 export const go = (path) => { location.hash = '#' + path; };
 
+/** Render ulang halaman ini lewat router: cleanup render lama jalan dan grafik digambar ulang. */
+export const refresh = () => window.dispatchEvent(new HashChangeEvent('hashchange'));
+
 /** Mulai sesi; kalau sesi yang sama di tanggal itu belum selesai, lanjutkan saja. */
 export async function startSession(routine, date) {
   const open = state.workouts
@@ -14,7 +17,7 @@ export async function startSession(routine, date) {
 }
 
 // Naikkan bersama CACHE di sw.js setiap kali file aplikasi berubah.
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.1.0';
 
 // Tombol "Pasang" memakai event beforeinstallprompt dari Chrome (ditangkap di app.js).
 let deferredInstall = null;

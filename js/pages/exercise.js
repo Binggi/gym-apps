@@ -1,12 +1,12 @@
 import { EXERCISES, GUIDE_URL } from '../data.js';
 import { state } from '../db.js';
 import { fmtKg, suggestion } from '../logic.js';
-import { chart, esc, photos } from '../ui.js';
+import { chart, esc, icon, photos } from '../ui.js';
 
 export function render(root, params, slug) {
   const e = EXERCISES[slug];
   if (!e) {
-    root.innerHTML = '<div class="page-head"><h1>Gerakan tidak ditemukan</h1><p class="lead"><a href="#/latihan">← Kembali ke Latihan</a></p></div>';
+    root.innerHTML = '<div class="page-head"><h1>Gerakan tidak ditemukan</h1></div><a class="btn" href="#/latihan">Kembali ke Latihan</a>';
     return;
   }
   const metric = e.weight ? 'Beban terberat' : e.timed ? 'Detik terlama' : 'Repetisi terbanyak';
@@ -21,14 +21,14 @@ export function render(root, params, slug) {
   const s = suggestion(state.workouts, slug);
   const fmtDate = (iso) => new Intl.DateTimeFormat('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso + 'T00:00'));
 
-  const rows = [...history].reverse().map((h) => `<tr>
-      <td><a href="#/latihan/${h.w.id}">${esc(fmtDate(h.w.date))}</a></td>
-      ${e.weight ? `<td class="r">${[...new Set(h.sets.map((x) => x.weight))].map((x) => fmtKg(x)).join(' / ')}</td>` : ''}
-      <td class="r">${h.sets.map((x) => x.reps ?? '–').join(', ')}</td></tr>`).join('');
+  const rows = [...history].reverse().map((h) => `<a class="row no-lead" href="#/latihan/${h.w.id}">
+      <span><span class="title">${esc(fmtDate(h.w.date))}</span>
+        <span class="sub">${e.timed ? 'Detik' : 'Repetisi'}: ${h.sets.map((x) => x.reps ?? '–').join(', ')}</span></span>
+      <span class="trail">${e.weight ? esc([...new Set(h.sets.map((x) => x.weight))].map((x) => fmtKg(x)).join(' / ')) : ''}${icon('right')}</span>
+    </a>`).join('');
 
   root.innerHTML = `
     <div class="page-head">
-      <a class="muted small" href="#/latihan">← Latihan</a>
       <h1>${esc(e.name)}</h1>
       <p class="lead">${esc(e.machine)} · ${esc(e.muscle)} · target ${e.repMin === e.repMax ? e.repMin : `${e.repMin}–${e.repMax}`}${e.timed ? ' detik' : ''}${e.perSide ? ' per sisi' : ''}</p>
     </div>
@@ -38,10 +38,12 @@ export function render(root, params, slug) {
         ${photos(e, true)}
         <ol>${e.steps.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>
         <p><b class="accent">Hindari:</b> ${esc(e.avoid)}</p>
-        <p><a href="https://www.youtube.com/results?search_query=${encodeURIComponent(`cara ${e.q} pemula`)}" target="_blank" rel="noopener">Cari video di YouTube</a>
-          · <a href="https://musclewiki.com/" target="_blank" rel="noopener">MuscleWiki</a>
-          · <a href="${GUIDE_URL}" target="_blank" rel="noopener">Panduan bergambar</a></p>
-        <p class="muted tiny">Foto: <a href="https://github.com/yuhonas/free-exercise-db" target="_blank" rel="noopener">free-exercise-db</a> (public domain).</p>
+        <div class="chips">
+          <a class="chip" href="https://www.youtube.com/results?search_query=${encodeURIComponent(`cara ${e.q} pemula`)}" target="_blank" rel="noopener">${icon('play')}Video YouTube</a>
+          <a class="chip" href="https://musclewiki.com/" target="_blank" rel="noopener">MuscleWiki</a>
+          <a class="chip" href="${GUIDE_URL}" target="_blank" rel="noopener">Panduan bergambar</a>
+        </div>
+        <p class="muted tiny">Foto: free-exercise-db (public domain).</p>
       </section>
       <div class="stack">
         <section class="card">
@@ -51,9 +53,7 @@ export function render(root, params, slug) {
         </section>
         <section class="card">
           <h2>Riwayat</h2>
-          ${history.length ? `<div class="tablewrap"><table>
-            <thead><tr><th>Tanggal</th>${e.weight ? '<th class="r">Beban</th>' : ''}<th class="r">${e.timed ? 'Detik' : 'Repetisi'}</th></tr></thead>
-            <tbody>${rows}</tbody></table></div>` : '<p class="muted">Belum ada set yang selesai untuk gerakan ini.</p>'}
+          ${history.length ? `<div class="list">${rows}</div>` : '<p class="muted">Belum ada set yang selesai untuk gerakan ini.</p>'}
         </section>
       </div>
     </div>`;

@@ -3,7 +3,8 @@ import { existsSync } from 'node:fs';
 import { test } from 'node:test';
 import { EXERCISES, ROUTINES } from '../js/data.js';
 import {
-  addDays, groupSets, mealKcal, mealProtein, newWorkout, nextRoutine, programWeek,
+  addDays, fillQuickWorkout, groupSets, lastGymDayBefore, mealKcal, mealProtein, newWorkout, nextGymDay,
+  nextRoutine, programWeek, quickWorkout, routineForDate,
   suggestion, validateBackup, weekStart, weightTrend, cardioTarget,
 } from '../js/logic.js';
 
@@ -83,6 +84,32 @@ test('minggu program & target treadmill naik mulai minggu 5', () => {
   assert.equal(programWeek(ws, '2026-11-30'), 5);
   assert.deepEqual(cardioTarget(ws, '2026-11-23'), { min: 15, max: 20 });
   assert.deepEqual(cardioTarget(ws, '2026-11-30'), { min: 25, max: 30 });
+});
+
+test('sesi lama tanpa detail menggeser urutan & minggu program, lalu bisa dilengkapi', () => {
+  const ws = [quickWorkout('dorong', '2026-11-02', 1), quickWorkout('tarik', '2026-11-04', 2)];
+  assert.equal(nextRoutine(ws).slug, 'kaki');
+  assert.equal(programWeek(ws, '2026-11-24'), 4);
+  assert.equal(suggestion(ws, 'chestpress').type, 'first'); // tanpa beban → belum ada saran
+  const full = fillQuickWorkout(ws, ws[0]);
+  assert.equal(full.quick, false);
+  assert.equal(full.sets.length, 18);
+  assert.ok(full.finishedAt);
+  assert.doesNotThrow(() => validateBackup({ app: 'catatan-gym', version: 1, workouts: ws, body: [], daily: [] }));
+});
+
+test('tanggal & sesi bawaan untuk mencatat sesi lama', () => {
+  assert.equal(lastGymDayBefore('2026-11-24'), '2026-11-23'); // Selasa → Senin
+  assert.equal(lastGymDayBefore('2026-11-23'), '2026-11-20'); // Senin → Jumat
+  assert.equal(routineForDate('2026-11-23').slug, 'dorong');
+  assert.equal(routineForDate('2026-11-25').slug, 'tarik');
+  assert.equal(routineForDate('2026-11-24'), null);
+});
+
+test('hari gym berikutnya dari hari istirahat', () => {
+  assert.equal(nextGymDay('2026-11-24'), '2026-11-25'); // Selasa → Rabu
+  assert.equal(nextGymDay('2026-11-27'), '2026-11-30'); // Jumat → Senin
+  assert.equal(nextGymDay('2026-11-28'), '2026-11-30'); // Sabtu → Senin
 });
 
 test('awal minggu adalah Senin', () => {

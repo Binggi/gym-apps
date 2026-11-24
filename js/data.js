@@ -97,7 +97,7 @@ export const ROUTINES = [
 export const MEALS = {
   sarapan: { label: 'Sarapan', menu: '3 telur rebus atau dadar, nasi 150 g (atau 2 roti gandum), 1 pisang', protein: 26, kcal: 550 },
   siang: { label: 'Siang', menu: 'Nasi 250 g, ayam bakar atau rebus 150 g, tempe 50 g, sayur', protein: 61, kcal: 750 },
-  camilan: { label: 'Camilan / sebelum gym', menu: '1 pisang, susu 250 ml, segenggam kacang (30 g)', protein: 16, kcal: 425 },
+  camilan: { label: 'Camilan', menu: '1 pisang, susu 250 ml, segenggam kacang (30 g)', protein: 16, kcal: 425 },
   malam: { label: 'Malam', menu: 'Nasi 200 g, ikan atau ayam 150 g, tahu 100 g, sayur', protein: 47, kcal: 675 },
 };
 
@@ -141,11 +141,9 @@ export const WARTEG = {
 };
 
 export const WARTEG_TIPS = [
-  'Pola aman: nasi 1 porsi + 2 lauk hewani + tempe atau tahu + sayur.',
-  'Pilih bakar, pindang, semur, balado. Gorengan tepung (bakwan, tahu isi) dan perkedel bukan sumber protein.',
-  'Kuah santan kental dan sambal minyak secukupnya; minta kuah sedikit.',
-  'Minum air putih atau teh tawar, bukan es teh manis.',
-  'Kalau siang cuma dapat ±40 g protein, tambah telur rebus atau susu di camilan.',
+  'Nasi + 2 lauk hewani + tempe/tahu + sayur.',
+  'Pilih bakar, pindang, semur. Kurangi gorengan tepung.',
+  'Minum air putih, bukan es teh manis.',
 ];
 
 export const GUIDE_URL = 'https://claude.ai/artifact/a1dd331c-61f1-4609-9274-3be6804afcd2';
