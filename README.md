@@ -1,38 +1,62 @@
 # Catatan Gym
 
-Aplikasi pencatatan harian untuk program **Jadwal Gym Mingguan**
-(Dorong · Tarik · Kaki, 3 set × 10–12, treadmill di akhir sesi).
+Aplikasi HP (PWA) untuk mencatat program **Jadwal Gym Mingguan**:
+Dorong · Tarik · Kaki, 3 set × 10–12, treadmill di akhir sesi.
 
-Laravel 13 + MySQL. Tanpa build step: CSS/JS biasa di `public/css/app.css` dan `public/js/app.js`.
+Semua data disimpan **di HP** (IndexedDB). Tanpa akun, tanpa server, tetap jalan tanpa internet.
 
 ## Fitur
 
 | Halaman | Isi |
 |---|---|
-| **Beranda** `/` | Strip minggu ini, sesi berikutnya (urutan tetap Dorong → Tarik → Kaki), ringkasan hari ini, tren berat |
-| **Latihan** `/latihan` | Mulai sesi, catat beban & repetisi tiap set (tersimpan otomatis), timer istirahat 90 detik, saran naik beban, treadmill, riwayat, progres per gerakan |
-| **Harian** `/harian` | Checklist 4 menu makan (protein & kkal otomatis), langkah, tidur, air, grafik 14 hari |
-| **Badan** `/badan` | Berat & lingkar perut, laju turun kg/minggu + peringatan sesuai aturan program |
+| **Beranda** | Jadwal minggu ini, sesi berikutnya (urutan tetap Dorong → Tarik → Kaki), ringkasan hari ini, tren berat |
+| **Latihan** | Catat beban & repetisi per set (tersimpan otomatis), timer istirahat 90 detik, layar tetap menyala, saran naik beban, foto alat bergerak, treadmill, riwayat, progres per gerakan |
+| **Harian** | Checklist 4 menu makan, pemilih lauk warteg, langkah, tidur, air, grafik 14 hari |
+| **Badan** | Berat & lingkar perut, laju turun kg/minggu + peringatan sesuai aturan program |
+| **Cadangan** | Simpan / pulihkan semua data sebagai file `.json` |
 
-Aturan program (target, menu, kalori) ada di [config/gym.php](config/gym.php);
-daftar gerakan & sesi di [database/seeders/ProgramSeeder.php](database/seeders/ProgramSeeder.php).
+## Pasang di HP Android
 
-## Menjalankan
+1. Buka alamat aplikasi di **Chrome** HP: `https://binggi.github.io/gym-apps/`
+2. Ketuk menu **⋮** → **Instal aplikasi** (atau **Tambahkan ke layar utama**).
+3. Buka dari ikon di layar utama. Setelah itu aplikasi jalan tanpa internet.
 
-```bash
-php artisan migrate --seed     # buat tabel + isi program
+Data hanya ada di HP itu. Simpan cadangan rutin dari halaman **Cadangan**
+(aplikasi mengingatkan kalau sudah lebih dari 2 minggu).
+
+## Publikasi (GitHub Pages)
+
+Sekali saja: di GitHub buka **Settings → Pages → Build and deployment**,
+pilih **Deploy from a branch**, branch **main**, folder **/ (root)**, lalu **Save**.
+Setiap push ke `main` akan memperbarui aplikasi; HP mengunduh versi baru saat online.
+
+Saat mengubah file aplikasi, naikkan versi di dua tempat supaya HP mengambil versi baru:
+`CACHE` di [sw.js](sw.js) dan `APP_VERSION` di [js/actions.js](js/actions.js).
+
+## Struktur
+
+```
+index.html            kerangka + navigasi
+manifest.webmanifest  nama, ikon, warna aplikasi
+sw.js                 cache offline
+css/app.css           tampilan
+js/data.js            isi program: gerakan, sesi, menu, lauk warteg, target
+js/logic.js           aturan program (tanpa DOM, dites di tests/)
+js/db.js              penyimpanan IndexedDB + cadangan
+js/charts.js          grafik SVG
+js/pages/*.js         halaman
+img/exercises/        foto gerakan (free-exercise-db, public domain)
 ```
 
-- **Laragon:** klik *Reload* Apache → buka http://gym-apps.test
-- **Tanpa Laragon:** `php artisan serve` → http://localhost:8000
+Program, target, dan menu bisa diubah di [js/data.js](js/data.js).
 
-Pertama kali dibuka, buat akun di `/daftar`. Setelah satu akun ada, halaman daftar tertutup.
-
-**Dari HP (satu Wi-Fi):** `php artisan serve --host=0.0.0.0 --port=8000`, lalu buka
-`http://<IP-laptop>:8000` di HP. Bisa di-*Add to Home Screen* agar terasa seperti aplikasi.
-
-## Test
+## Menjalankan di PC
 
 ```bash
-php artisan test   # memakai database MySQL gym_apps_test
+php -S 127.0.0.1:8000      # lalu buka http://127.0.0.1:8000
+node tests/logic.test.js   # test aturan program
 ```
+
+## Kredit
+
+Foto gerakan: [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (Unlicense / public domain).
